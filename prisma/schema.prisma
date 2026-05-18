@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Quote {
+  id String @id @default(cuid())
+
+  // === Input snapshot (what the customer told us) ===
+  propertyType    PropertyType
+  region          Region
+  roofOrientation Orientation
+  monthlyBillGbp  Float
+
+  // === Calculated outputs (computed at quote creation, then frozen) ===
+  systemSizeKw           Float
+  annualGenerationKwh    Float
+  annualSavingsGbp       Float
+  monthlySubscriptionGbp Float
+  upfrontPriceGbp        Float
+  paybackYears           Float
+  annualCo2SavedKg       Float
+
+  // === Metadata ===
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("quotes")
+}
+
+enum PropertyType {
+  DETACHED
+  SEMI_DETACHED
+  MID_TERRACE
+  END_TERRACE
+  FLAT
+  BUNGALOW
+}
+
+enum Region {
+  LONDON
+  SOUTH_EAST
+  SOUTH_WEST
+  MIDLANDS
+  NORTH
+  SCOTLAND
+  WALES
+  NORTHERN_IRELAND
+}
+
+enum Orientation {
+  SOUTH
+  SOUTH_EAST
+  SOUTH_WEST
+  EAST
+  WEST
+  NORTH
+}
