@@ -19,7 +19,12 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: true,
+        projectService: {
+          // Test files live outside the build tsconfig's rootDir but we
+          // still want them linted. Let the project service treat them
+          // as belonging to a default project rather than failing.
+          allowDefaultProject: ['test/*.ts'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
