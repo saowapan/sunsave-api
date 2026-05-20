@@ -10,6 +10,17 @@ Built as a portfolio project to explore the stack used at
 [Sunsave](https://www.sunsave.energy/) (NestJS, Next.js, PostgreSQL, Prisma).
 It is **not affiliated with Sunsave** and uses only public, illustrative data.
 
+## Live demo
+
+| Surface | URL |
+| ------- | --- |
+| Web app | <https://sunsave-web.vercel.app/> |
+| API     | <https://sunsave-api.onrender.com/api/health> |
+
+> The API runs on Render's free tier, so the first request after a period
+> of inactivity may take ~30 seconds to wake the instance. Subsequent
+> requests are instant.
+
 > **Why this project?** I wanted to get hands-on with NestJS before joining a
 > team that uses it, and to make sure I actually understood the problem
 > domain — turning a handful of facts about a home into a believable quote.
@@ -271,8 +282,10 @@ In rough priority order:
 2. **Admin dashboard** — an authenticated internal view of quotes (KPIs,
    filtering, a quotes-per-day chart), using GraphQL for the aggregate reads
    where REST is a poorer fit.
-3. **Deploy** — containerise both apps; the README's local Docker setup maps
-   naturally onto ECS/Fargate, which is the documented Sunsave approach.
+3. **Containerise for production-grade hosting** — the apps are deployed to
+   Render (API) and Vercel (web). The next step is shipping a container image
+   so the same artefact can run on ECS/Fargate, which is the documented
+   Sunsave approach, with no platform-specific glue.
 4. **Money as integer minor units** — remove the `Float` tech debt.
 5. **Battery option** — model higher self-consumption and its cost impact.
 6. **Split `/health`** into `/live` and `/ready` for orchestration.
@@ -287,7 +300,7 @@ In rough priority order:
 | Test suite (domain + service)    | ✅ Complete |
 | Customer wizard → quote journey  | ✅ Complete |
 | Admin dashboard                  | ⬜ Planned  |
-| Deployment                       | ⬜ Planned  |
+| Deployment (Render API + Vercel web) | ✅ Live |
 
 ---
 
