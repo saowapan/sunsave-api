@@ -249,7 +249,7 @@ pnpm run test          # unit + service tests
 ## The quote model
 
 Estimates use documented UK figures, each sourced in
-[`constants.ts`](sunsave-api/src/calculations/domain/constants.ts):
+[`constants.ts`](src/calculations/domain/constants.ts)
 
 - **Regional solar yield** (kWh per kWp/year) — MCS irradiance zones / PVGIS
 - **Orientation derating** — south = 1.0, east/west ≈ 0.85, north ≈ 0.55
