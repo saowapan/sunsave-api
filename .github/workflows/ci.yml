@@ -8,6 +8,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # prisma.config.ts reads DATABASE_URL eagerly, and the package.json
+    # postinstall hook runs `prisma generate`. Setting it at the job level
+    # ensures every step (including install) sees a value. Tests use mocked
+    # Prisma so the URL doesn't need to point at a real DB.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
     steps:
       - uses: actions/checkout@v5
 
@@ -20,15 +26,8 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install dependencies (runs `prisma generate` via postinstall)
         run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm prisma generate
-        env:
-          # Prisma config reads DATABASE_URL eagerly; generate doesn't need
-          # a real DB but does need the variable to exist.
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
       - name: Type-check
         run: pnpm exec tsc --noEmit
