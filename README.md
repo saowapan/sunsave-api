@@ -6,15 +6,13 @@ property and receives an instant, personalised quote — recommended system
 size, estimated savings, monthly subscription price, payback period, and
 carbon avoided.
 
-Built as a portfolio project to explore the stack used at
-[Sunsave](https://www.sunsave.energy/) (NestJS, Next.js, PostgreSQL, Prisma).
-It is **not affiliated with Sunsave** and uses only public, illustrative data.
+The stack used: NestJS, Next.js, PostgreSQL, Prisma
 
 ## Live demo
 
-| Surface | URL |
-| ------- | --- |
-| Web app | <https://sunsave-web.vercel.app/> |
+| Surface | URL                                           |
+| ------- | --------------------------------------------- |
+| Web app | <https://sunsave-web.vercel.app/>             |
 | API     | <https://sunsave-api.onrender.com/api/health> |
 
 > The API runs on Render's free tier, so the first request after a period
@@ -32,12 +30,6 @@ It is **not affiliated with Sunsave** and uses only public, illustrative data.
 
 ## What it does
 
-```
-Landing page  →  Multi-step wizard  →  Instant quote  →  Shareable link
-                  (property, region,     (system size,
-                   roof, bill)            savings, price…)
-```
-
 - **Customer signup wizard** mirroring a real solar onboarding flow, with the
   current step encoded in the URL (`/signup?step=region`) so it is
   shareable, refresh-safe, and back-button friendly.
@@ -48,29 +40,13 @@ Landing page  →  Multi-step wizard  →  Instant quote  →  Shareable link
 
 ---
 
-## Tech stack
-
-| Layer      | Choice                               | Notes                                      |
-| ---------- | ------------------------------------ | ------------------------------------------ |
-| Backend    | NestJS + TypeScript (strict)         | Modular architecture, dependency injection |
-| Database   | PostgreSQL 16                        | Run locally via Docker                     |
-| ORM        | Prisma 7 (with `@prisma/adapter-pg`) | Type-safe queries, versioned migrations    |
-| Validation | Zod                                  | One schema reused on client and server     |
-| Frontend   | Next.js (App Router) + TypeScript    | Server components, server-rendered quotes  |
-| Styling    | Tailwind CSS                         | Custom solar/leaf theme tokens             |
-| Forms      | React Hook Form + Zod resolver       | Per-step validation                        |
-| Tests      | Jest                                 | Domain logic + service orchestration       |
-| Tooling    | ESLint, Prettier, Docker Compose     |                                            |
-
----
-
 ## Architecture
 
 Two independently deployable services and a database. The frontend talks to
 the backend over a small typed HTTP client; the backend owns all business
 logic and persistence.
 
-```
+````
 ┌──────────────────┐        REST/JSON        ┌──────────────────┐
 │   Next.js web    │ ──────────────────────▶ │    NestJS API    │
 │  (App Router)    │                         │                  │
@@ -83,88 +59,6 @@ logic and persistence.
                                               ┌──────────────────┐
                                               │   PostgreSQL     │
                                               └──────────────────┘
-```
-
-### Backend module structure
-
-The most important architectural decision is the separation of the **pure
-calculation domain** from the framework. The quote maths has no knowledge of
-NestJS, Prisma, or HTTP — it is plain functions over plain types.
-
-```
-src/
-├── config/            # Zod-validated environment variables (fail-fast at boot)
-├── prisma/            # PrismaService (lifecycle-managed) + @Global module
-├── health/            # DB-aware health check (returns 503 if Postgres is down)
-├── calculations/
-│   ├── calculations.service.ts   # Thin Nest adapter
-│   └── domain/                    # ← framework-free core
-│       ├── types.ts               #   inputs/outputs + Zod schemas
-│       ├── constants.ts           #   UK solar data, each value sourced
-│       ├── formulas.ts            #   pure calculation functions
-│       └── formulas.spec.ts       #   unit tests, zero mocks
-└── quotes/
-    ├── quotes.controller.ts       # REST endpoints (201 on create, 404 on miss)
-    ├── quotes.service.ts          # orchestrates: calculate → persist → map
-    ├── dto/                       # request/response contracts
-    └── pipes/zod-validation.pipe.ts  # generic Zod ⇄ Nest bridge
-```
-
-Because the domain is pure, its tests run in milliseconds with no database and
-no mocks, and the logic could be lifted into a serverless function or CLI
-unchanged. The `CalculationsService` exists as a thin seam where cross-cutting
-concerns (logging, metrics, feature-flagged pricing) could be added later
-without touching the maths.
-
----
-
-## Key decisions & trade-offs
-
-This section is the point of the project — the reasoning behind the code.
-
-**Pure domain, isolated from the framework.**
-The calculation logic lives in `calculations/domain/` as pure functions with
-no Nest/Prisma imports. Business rules are the longest-lived code in any app;
-keeping them framework-free makes them trivially testable and portable. The
-Nest service is a five-line adapter over them.
-
-**One Zod schema, shared across the boundary.**
-`QuoteInputsSchema` defines the validation rules once. The backend uses it in
-a validation pipe; the frontend uses the _same_ rules to validate the wizard
-(the bill step even extracts the single field via `schema.shape.monthlyBillGbp`).
-Currently the schema is duplicated in the web repo with a sync note —
-**the obvious next step is a shared workspace package** so there is a single
-source of truth. I chose duplication over spending half the timeline on
-monorepo setup, and flagged it rather than hiding it.
-
-**Quote outputs are frozen on the row.**
-A `Quote` stores both the inputs and the calculated outputs. The outputs could
-be recomputed on read, but persisting them means a shared link shows the same
-numbers forever, even if the pricing model changes tomorrow. A quote is an
-immutable snapshot, not a live recalculation.
-
-**Wizard state: URL + sessionStorage, not Context.**
-The current step lives in the URL (shareable, restorable); the collected
-answers live in `sessionStorage` (survives refresh, cleared after submit).
-React Context would lose everything on refresh and has no natural parent to
-host it across separate step routes.
-
-**CUID primary keys, not auto-increment integers.**
-Sequential integer IDs leak volume and let anyone enumerate `/quote/1`,
-`/quote/2`. CUIDs are non-sequential and URL-safe — appropriate for an ID that
-appears in a shareable link.
-
-**Health check that tells the truth.**
-`/health` runs `SELECT 1` against Postgres and returns **503** if it fails. A
-health endpoint that always returns 200 is theatre — load balancers and
-readiness probes rely on it to route traffic away from broken instances.
-
-**Money as `Float` — known tech debt.**
-Monetary values use `Float` for speed of development. Production code should
-use integer minor units (pence) or a decimal type to avoid floating-point
-rounding. This is deliberately flagged, not overlooked.
-
----
 
 ## Running locally
 
@@ -180,7 +74,7 @@ From the project root (where `docker-compose.yml` lives):
 
 ```bash
 docker compose up -d
-```
+````
 
 ### 2. Backend (`sunsave-api`)
 
@@ -294,14 +188,12 @@ In rough priority order:
 
 ## Project status
 
-| Area                             | Status      |
-| -------------------------------- | ----------- |
-| Backend API + calculation domain | ✅ Complete |
-| Test suite (domain + service)    | ✅ Complete |
-| Customer wizard → quote journey  | ✅ Complete |
-| Admin dashboard                  | ⬜ Planned  |
-| Deployment (Render API + Vercel web) | ✅ Live |
+| Area                                 | Status      |
+| ------------------------------------ | ----------- |
+| Backend API + calculation domain     | ✅ Complete |
+| Test suite (domain + service)        | ✅ Complete |
+| Customer wizard → quote journey      | ✅ Complete |
+| Admin dashboard                      | ⬜ Planned  |
+| Deployment (Render API + Vercel web) | ✅ Live     |
 
 ---
-
-_A portfolio demo by May Kongpia. Not affiliated with Sunsave._
