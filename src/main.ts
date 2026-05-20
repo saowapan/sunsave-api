@@ -19,4 +19,10 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  // Surface startup failures clearly in container logs — a Render or ECS
+  // restart loop is undebuggable otherwise.
+  console.error('Failed to start application:', err);
+  process.exit(1);
+});
